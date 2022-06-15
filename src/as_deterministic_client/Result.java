@@ -25,4 +25,8 @@ public class Result<T> {
 	public ErrorType getError() {
 		return error_value;
 	}
+	
+	public String toString() {
+		return hasValue() ? return_value.toString() : "Error["+error_value.name()+"]";
+	}
 }

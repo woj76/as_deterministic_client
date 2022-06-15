@@ -5,19 +5,33 @@ import java.util.Random;
 public class Main {
 
 	public static void main(String[] args) {
-		System.out.println(ActivationReturnType.kInit);
-
-		Random r = new Random(100);
-		System.out.println(r.nextLong());
-		System.out.println(r.nextLong());
+		DeterministicClient dc = new DeterministicClient();
+		int cycles = 10;
+		dc.setParameters(cycles, TimeStamp.period(1000000000L) /* 1 sec. */, 4);
+		System.out.println("waitForActivation: "+dc.waitForActivation());
+		System.out.println("getActivationTime: "+dc.getActivationTime());
+		System.out.println("getNextActivationTime: "+dc.getNextActivationTime());
+		System.out.println("getRandom: "+dc.getRandom());
+		System.out.println("waitForActivation: "+dc.waitForActivation());
+		System.out.println("getActivationTime: "+dc.getActivationTime());
+		System.out.println("getNextActivationTime: "+dc.getNextActivationTime());
+		System.out.println("getRandom: "+dc.getRandom());
+		System.out.println("waitForActivation: "+dc.waitForActivation());
+		System.out.println("getActivationTime: "+dc.getActivationTime());
+		System.out.println("getNextActivationTime: "+dc.getNextActivationTime());
+		System.out.println("getRandom: "+dc.getRandom());
+		for(int i=0; i<cycles;i++) {
+			System.out.println("waitForActivation: "+dc.waitForActivation());
+			System.out.println("getActivationTime: "+dc.getActivationTime());
+			System.out.println("getNextActivationTime: "+dc.getNextActivationTime());
+			System.out.println("getRandom: "+dc.getRandom());
+		}
+		System.out.println("waitForActivation: "+dc.waitForActivation());
+		System.out.println("getActivationTime: "+dc.getActivationTime());
+		System.out.println("getNextActivationTime: "+dc.getNextActivationTime());
+		System.out.println("getRandom: "+dc.getRandom());
 		
-		r = new Random();
-		r.setSeed(100);
-		System.out.println(r.nextLong());
-		System.out.println(r.nextLong());
 		
-		System.out.print("a".repeat(Math.max(0, 0)));
-
 	}
 
 }

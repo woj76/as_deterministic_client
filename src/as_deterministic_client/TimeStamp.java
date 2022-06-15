@@ -1,5 +1,7 @@
 package as_deterministic_client;
 
+import java.time.Instant;
+
 public class TimeStamp {
 	
 	public enum Type { ABSOLUTE, RELATIVE; }
@@ -42,5 +44,13 @@ public class TimeStamp {
 	
 	public Long getTime() {
 		return time;
+	}
+	
+	public String toString() {
+		if(type == Type.RELATIVE) {
+			return "Interval["+time+"ns.]";
+		}
+		return "Absolute[" +time+"]";
+//		return "Absolute[" +time+","+Instant.ofEpochMilli(0) /*.plusNanos(time).toString()*/+"]";
 	}
 }

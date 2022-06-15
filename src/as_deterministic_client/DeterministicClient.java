@@ -49,15 +49,8 @@ public final class DeterministicClient {
 		}else if (activationState == ActivationReturnType.kInit) { 
 			activationState = ActivationReturnType.kRun;
 		}else if (activationState == ActivationReturnType.kRun) {
-			if (kRunLoopCount > 0) { 
-				kRunLoopCount--;
-			}else if(kRunLoopCount == 0) {
-				activationState = ActivationReturnType.kTerminate;
-			}else {
-				assert kRunLoopCount == -1;
-			}
 			if(cycleTime != null) {
-				timeRemain = TimeStamp.now().elapsed(lastActivation.shift(cycleTime)).getTime();
+				timeRemain = lastActivation.shift(cycleTime).elapsed(TimeStamp.now()).getTime();
 				if(timeRemain < 0) {
 					return new Result<ActivationReturnType>(ErrorType.kCycleOverrun);					
 				}
@@ -66,6 +59,13 @@ public final class DeterministicClient {
 			return new Result<ActivationReturnType>(ErrorType.kFailed);
 		}
 		if(activationState == ActivationReturnType.kRun) {
+			if (kRunLoopCount > 0) { 
+				kRunLoopCount--;
+			}else if(kRunLoopCount == 0) {
+				activationState = ActivationReturnType.kTerminate;
+			}else {
+				assert kRunLoopCount == -1;
+			}
 			if(timeRemain != null) {
 				try {
 					synchronized(this) {
@@ -91,6 +91,7 @@ public final class DeterministicClient {
 		}
 		int count = 0;
 		// TODO run #workers.size() parallel threads at the time
+		// And this should be configurable through the setup 
 		while(container.hasNext()) {
 			WorkerThreadImpl wt = workers.get(count % workers.size());
 			if(lastSetRandomSeed != null) {
