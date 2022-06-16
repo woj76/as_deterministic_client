@@ -7,7 +7,7 @@ public class Main {
 	public static void main(String[] args) {
 		DeterministicClient dc = new DeterministicClient();
 		int cycles = 10;
-		dc.setParameters(cycles, TimeStamp.period(1000000000L) /* 1 sec. */, 4, true);
+		dc.setParameters(cycles, TimeStamp.period(1000000000L) /* duration of one cycle, 1 sec. */, 4 /* worker threads */, true /* run workers in parallel */);
 		// When this is set, all random numbers in a complete run should be repeatable
 		dc.setRandomSeed(1234567890L);
 		System.out.println("waitForActivation: "+dc.waitForActivation());
