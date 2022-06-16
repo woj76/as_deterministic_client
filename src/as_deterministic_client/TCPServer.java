@@ -91,8 +91,10 @@ public class TCPServer {
                     	   	   in.close();
                     	   	   out.close();
                                clientSocket.close();
+                               ba.close();
                        } catch (IOException e) {
-                               /* close failed */}
+                               /* close failed */
+                       }
                }
        }
 
