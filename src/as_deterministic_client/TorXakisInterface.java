@@ -10,15 +10,16 @@ public class TorXakisInterface {
 	
 	public TorXakisInterface(int portNum) {
 		id = portNum;
-	}
+	}	
 	
+	// TODO returns should have the object identifier too! 
 	public String processMessage(String inMessage) {
 		assert inMessage != null;
 	    if(debug)
 	    	System.out.printf("[%d][%s]\n", id, inMessage);
 		if(inMessage.equals("stop")) 
 			return "EXIT";
-		String[] tokens = inMessage.split(" ");
+		String[] tokens = inMessage.replaceAll("\t", " ").split("[ ]+");
 		if(tokens[0].equals("create")) {
 			assert tokens.length == 1;
 			int objRef = objects.size();
@@ -28,7 +29,9 @@ public class TorXakisInterface {
 		assert tokens.length >= 2;
 		int objId = Integer.parseInt(tokens[1]);
 		if(tokens[0].equals("delete")) {
-			objects.set(objId, null);
+			if(objId < objects.size()) {
+				objects.set(objId, null);
+			}
 			return "OK";
 		}
 		if(objId >= objects.size() || objects.get(objId) == null) {
@@ -41,7 +44,7 @@ public class TorXakisInterface {
 					Integer.parseInt(tokens[2]),
 					TimeStamp.period(Long.parseLong(tokens[3])),
 					Integer.parseInt(tokens[4]),
-					Boolean.valueOf(tokens[5]));
+					Integer.parseInt(tokens[5]) == 1);
 			}catch(IllegalStateException ise) {
 				return "ERR";
 			}

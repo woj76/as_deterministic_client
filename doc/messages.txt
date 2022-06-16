@@ -1,0 +1,76 @@
+Message:
+    create
+Returns:
+    OK <objId>
+Comments:
+    the identifiers start with 0 and increase
+    
+Message:
+    delete <objId>
+Returns:
+    OK
+Comments:
+    Always returns success, even if the object is already deleted, or never existed.
+    Object identifiers are not recycled, so once deleted a given object identifier can never become valid again
+
+Message:
+    start <objId> <kCycles> <cycleDuration> <numPoolWorkers> <parallel>
+Returns:
+    OK
+    ERR
+Comments:
+    Use -1 for kCycles to have infinity. CycleDuration is specified in nanoseconds (currently there is no option for
+    non cyclic (even driven) operation. parallel (1 or 0) specifies if the workers should be run as actual numPoolWorkers 
+    parallel threads (otherwise they are run sequentially).
+    Error is if it has been already called for the given object, or the object does not exist.
+    Note, no validity checking of parameter formatting is performed, malformed strings will just crash the connection,
+    or are otherwise not predictable.  
+
+All messages below return "ERR" if the objId does not exist (has not been created).
+   
+Message:
+    set_random_seed <objId> <seed>
+Returns:
+    OK
+Comments:
+    Sets the random seed of the given deterministic client object to the specified seed (long integer). For two objects to 
+    behave as if they are operating in a lock step, they need to be initialized with the same seed.
+    
+Message:
+    wait_for_activation <objId>
+Returns:
+    OK <stateId>
+    ERR <errorId>
+Comments:
+    Correct and error replies are according the the AUTOSAR document. For example "OK 3" means the kRun state, "ERR 1" means 
+    kCycleOverrun error.
+    
+Message:
+    get_activation_time <objID>
+Returns:
+    OK <timeStamp>
+    ERR <errorId>
+Comments:
+    Correct and error replies are according the the AUTOSAR document. The meaning of the time stamp (long integer) is number 
+    of nanoseconds since unspecified epoch (most probably OS boot moment). 
+     
+Message:
+    get_next_activation_time <objID>
+Returns:
+    OK <timeStamp>
+    ERR <errorId>
+Comments:
+    See get_activation_time
+    
+Message:
+    get_random <objID>
+Returns:
+    OK <randomNumber>
+Comments:
+    Signed long integer result.
+    
+Message:
+    run_worker_pool
+Comments:
+    TODO
+    
