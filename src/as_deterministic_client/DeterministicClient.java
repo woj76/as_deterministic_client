@@ -99,8 +99,6 @@ public final class DeterministicClient {
 			workers.add(new WorkerThreadImpl());
 		}
 		int count = 0;
-		// TODO run #workers.size() parallel threads at the time
-		// And this should be configurable through the setup 
 		Iterator<ValueType> it = container.iterator();
 		while(it.hasNext()) {
 			WorkerThreadImpl wt = workers.get(count % workers.size());
