@@ -10,20 +10,27 @@ import java.net.Socket;
 
 public class TCPServer {
 
-	private static final int[] ports = {7896};
-
-	public static void main(String[] args) {
+	public TCPServer(final int[] ports) {
 		for(int port : ports) {
 			new Thread(new Runnable() {				
 				@Override
 				public void run() {
+					ServerSocket listenSocket = null;
 					try {
-						ServerSocket listenSocket = new ServerSocket(port);
+						listenSocket = new ServerSocket(port);
 						while (true) {
 							new Connection(listenSocket.accept(), new TorXakisInterface(port)).start();
 						}
 					} catch (IOException e) {
 						System.out.println("Listen :" + e.getMessage());
+					} finally {
+						if(listenSocket != null) {
+							try {
+								listenSocket.close();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
 					}
 				}
 			}).start();;
@@ -68,11 +75,10 @@ public class TCPServer {
             		   }
             		   String s = new String(ba.toByteArray()).strip();
             		   String r = txi.processMessage(s);
-            		   if(r != null) {
-            			   out.write((r+newLine).getBytes());
-            			   out.flush();
-                		   ba.reset();
-            		   }else {
+           			   out.write(((r.equals("EXIT") ? "OK" : r)+newLine).getBytes());
+           			   out.flush();
+               		   ba.reset();
+            		   if(r.equals("EXIT")) {
             			   break;
             		   }
             	   }

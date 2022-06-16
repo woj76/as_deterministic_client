@@ -5,6 +5,11 @@ import java.util.Arrays;
 public class Main {
 
 	public static void main(String[] args) {
+		// test();
+		new TCPServer(new int[] {7896, 7897});
+	}
+
+	public static void test() {
 		DeterministicClient dc = new DeterministicClient();
 		int cycles = 10;
 		dc.setParameters(cycles, TimeStamp.period(1000000000L) /* duration of one cycle, 1 sec. */, 4 /* worker threads */, true /* run workers in parallel */);
