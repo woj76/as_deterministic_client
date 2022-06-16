@@ -39,7 +39,7 @@ public final class DeterministicClient {
 		if(parallel != null) {
 			_parallel = parallel;
 		}
-	
+		_initialized = true;	
 	}
 	
 	public Result<ActivationReturnType> waitForActivation() {
