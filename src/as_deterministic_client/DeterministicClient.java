@@ -12,10 +12,12 @@ public final class DeterministicClient {
 	private Long lastSetRandomSeed = null;
 	private ActivationReturnType activationState = null;
 	private Integer kRunLoopCount = -1;
+	private Integer kRunCount = 0;
 	private boolean _initialized = false; 
 	private TimeStamp lastActivation = null;
 	private TimeStamp cycleTime = null;
 	private Integer poolRun = 0;
+	private Boolean _parallel = false;
 	
 	public DeterministicClient () {
 		// each worker should be configurable with the data set number it services???
@@ -23,7 +25,7 @@ public final class DeterministicClient {
 	}
 
 	
-	void setParameters(Integer kRunLoopCount, TimeStamp cycleTime, Integer numberofWorkers) {
+	void setParameters(Integer kRunLoopCount, TimeStamp cycleTime, Integer numberofWorkers, Boolean parallel) {
 		if(_initialized)
 			throw new IllegalStateException(this.getClass().getSimpleName()+" can only be initialized once!");
 		assert numberofWorkers != null;
@@ -34,12 +36,15 @@ public final class DeterministicClient {
 		if(cycleTime != null) {
 			this.cycleTime = cycleTime;
 		}
+		if(parallel != null) {
+			_parallel = parallel;
+		}
 	
 	}
 	
 	public Result<ActivationReturnType> waitForActivation() {
 		Long timeRemain = null;
-		poolRun = 0;
+		poolRun = 1;
 		if (activationState == null) {
 			activationState = ActivationReturnType.kRegisterServices; 
 		}else if (activationState == ActivationReturnType.kRegisterServices) {
@@ -52,6 +57,7 @@ public final class DeterministicClient {
 			if(cycleTime != null) {
 				timeRemain = lastActivation.shift(cycleTime).elapsed(TimeStamp.now()).getTime();
 				if(timeRemain < 0) {
+					lastActivation = TimeStamp.now();
 					return new Result<ActivationReturnType>(ErrorType.kCycleOverrun);					
 				}
 			}
@@ -59,6 +65,7 @@ public final class DeterministicClient {
 			return new Result<ActivationReturnType>(ErrorType.kFailed);
 		}
 		if(activationState == ActivationReturnType.kRun) {
+			kRunCount++;
 			if (kRunLoopCount > 0) { 
 				kRunLoopCount--;
 			}else if(kRunLoopCount == 0) {
@@ -83,21 +90,46 @@ public final class DeterministicClient {
 		return new Result<ActivationReturnType>(activationState);
 	}
 	
-	public <ValueType> Result<Void> runWorkerPool(WorkerRunnable<ValueType> runnableObj, Iterator<ValueType> container) {
+	public <ValueType> Result<Void> runWorkerPool(WorkerRunnable<ValueType> runnableObj, Iterable<ValueType> container) {
+		
 		assert workersCount > 0;
 		List<WorkerThreadImpl> workers = new ArrayList<WorkerThreadImpl>();
+		Thread[] threads = _parallel ? new Thread[workersCount] : null; 
 		for(int i=0;i<workersCount;i++) {
 			workers.add(new WorkerThreadImpl());
 		}
 		int count = 0;
 		// TODO run #workers.size() parallel threads at the time
 		// And this should be configurable through the setup 
-		while(container.hasNext()) {
+		Iterator<ValueType> it = container.iterator();
+		while(it.hasNext()) {
 			WorkerThreadImpl wt = workers.get(count % workers.size());
 			if(lastSetRandomSeed != null) {
-				wt.setRandomSeed(lastSetRandomSeed*(poolRun+1)*(count+1));
+				assert lastSetRandomSeed != 0L;
+				assert kRunCount != 0; // This could be negative for infinite runs
+				assert poolRun > 0;
+				assert count >= 0;
+				wt.setRandomSeed(lastSetRandomSeed*kRunCount*poolRun*(count+1));
 			}
-			runnableObj.run(container.next(), wt);
+			if(_parallel) {
+				int c = count % workers.size();
+				if(threads[c] != null) {
+					try {
+						threads[c].join();
+					} catch (InterruptedException ie) {
+					}
+				}
+				ValueType el = it.next();
+				threads[c] = new Thread(new Runnable() {
+					@Override
+					public void run() {
+						runnableObj.run(el, wt);
+					}
+				});
+				threads[c].start();
+			}else {
+				runnableObj.run(it.next(), wt);
+			}
 			count++; 
 		}
 		poolRun++;

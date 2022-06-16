@@ -1,18 +1,27 @@
 package as_deterministic_client;
 
 import java.time.Instant;
+import java.time.ZoneId;
 
+
+/*
+ * The Instant class in the standard Java API has all this functionality and
+ * could be used instead. In fact, it is used a bit nevertheless to get the
+ * pretty printed absolute time stamp.
+ */
 public class TimeStamp {
 	
 	public enum Type { ABSOLUTE, RELATIVE; }
 	
 	private Long time;
+	private Instant refPoint = null; 
 	private Type type;
 	
 	private TimeStamp(Type type) {
 		this.type = type;
 		if(type == Type.ABSOLUTE) {
 			time = System.nanoTime();
+			refPoint = Instant.now().minusNanos(time);
 		}else if (type == Type.RELATIVE) {
 			time = 0L;
 		}
@@ -33,6 +42,7 @@ public class TimeStamp {
 		assert p.type == Type.RELATIVE;
 		TimeStamp r = new TimeStamp(Type.ABSOLUTE);
 		r.time = this.time + p.time;
+		r.refPoint = this.refPoint; // probably obsolete...
 		return r;		
 	}
 	
@@ -50,7 +60,6 @@ public class TimeStamp {
 		if(type == Type.RELATIVE) {
 			return "Interval["+time+"ns.]";
 		}
-		return "Absolute[" +time+"]";
-//		return "Absolute[" +time+","+Instant.ofEpochMilli(0) /*.plusNanos(time).toString()*/+"]";
+		return "Absolute[" +time+","+refPoint.plusNanos(time).atZone(ZoneId.systemDefault()).toString()+"]";
 	}
 }
