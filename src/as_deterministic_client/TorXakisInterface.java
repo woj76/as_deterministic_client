@@ -26,18 +26,21 @@ public class TorXakisInterface {
 			objects.add(new DeterministicClient());
 			return "OK "+objRef;
 		}
+		if(tokens.length < 2) {
+			return "ERR";
+		}
 		assert tokens.length >= 2;
 		int objId = Integer.parseInt(tokens[1]);
 		if(tokens[0].equals("delete")) {
 			if(objId < objects.size()) {
 				objects.set(objId, null);
 			}
-			return "OK";
+			return "OK "+objId;
 		}
 		if(objId >= objects.size() || objects.get(objId) == null) {
 			return "ERR";
 		}
-		if(tokens[0].equals("start")) {
+		if(tokens[0].equals("init")) {
 			assert tokens.length == 6;
 			try {
 				objects.get(objId).setParameters(
@@ -46,43 +49,43 @@ public class TorXakisInterface {
 					Integer.parseInt(tokens[4]),
 					Integer.parseInt(tokens[5]) == 1);
 			}catch(IllegalStateException ise) {
-				return "ERR";
+				return "ERR "+objId;
 			}
-			return "OK";
+			return "OK "+objId;
 		}
 		if(tokens[0].equals("set_random_seed")) {
 			assert tokens.length == 3;
 			objects.get(objId).setRandomSeed(Long.parseLong(tokens[2]));
-			return "OK";
+			return "OK "+objId;
 		}
 		if(tokens[0].equals("wait_for_activation")) {
 			assert tokens.length == 2;
 			Result<ActivationReturnType> r = objects.get(objId).waitForActivation();
 			if(r.hasValue()) {
-				return "OK "+r.getValue().ordinal();
+				return "OK "+objId+" "+r.getValue().ordinal();
 			}
-			return "ERR "+r.getError().ordinal();
+			return "ERR "+objId+" "+r.getError().ordinal();
 		}
 		if(tokens[0].equals("get_activation_time")) {
 			assert tokens.length == 2;
 			Result<TimeStamp> r = objects.get(objId).getActivationTime();
 			if(r.hasValue()) {
-				return "OK "+r.getValue().getTime();
+				return "OK "+objId+" "+r.getValue().getTime();
 			}
-			return "ERR "+r.getError().ordinal();
+			return "ERR "+objId+" "+r.getError().ordinal();
 		}
 		if(tokens[0].equals("get_next_activation_time")) {
 			assert tokens.length == 2;
 			Result<TimeStamp> r = objects.get(objId).getNextActivationTime();
 			if(r.hasValue()) {
-				return "OK "+r.getValue().getTime();
+				return "OK "+objId+" "+r.getValue().getTime();
 			}
-			return "ERR "+r.getError().ordinal();
+			return "ERR "+objId+" "+r.getError().ordinal();
 		}
 		if(tokens[0].equals("get_random")) {
 			assert tokens.length == 2;
 			Long r = objects.get(objId).getRandom();
-			return "OK "+r.toString();
+			return "OK "+objId+" "+r.toString();
 		}
 		if(tokens[0].equals("run_worker_pool")) {
 			// TODO run worker pool
