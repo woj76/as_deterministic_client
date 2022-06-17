@@ -12,7 +12,6 @@ public class TorXakisInterface {
 		id = portNum;
 	}	
 	
-	// TODO returns should have the object identifier too! 
 	public String processMessage(String inMessage) {
 		assert inMessage != null;
 	    if(debug)
