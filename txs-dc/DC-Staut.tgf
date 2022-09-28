@@ -1,0 +1,10 @@
+1 create
+2 created
+3 delete
+4 STAUTDEF  dc [ DCcall :: DCobj # DCcall; DCreturn :: DCobj # DCreturn ] ()  ::=     STATE   create, created, delete, deleted     VAR        object :: DCobj     INIT        create { object :=  DCobj(0) } 
+5 deleted
+#
+1 2 DCcall ?obj !DCcall_Construct
+2 3  DCreturn ?obj !DCreturn_Construct { object := obj }
+3 5 DCcall !object! DCcall_Destruct
+5 1  DCreturn ?obj !DCreturn_Destruct

@@ -1,0 +1,327 @@
+
+-- ---------------------------------------------------------------------------------------------- --
+--
+-- AUTOSAR
+-- Execution Management
+-- Deterministic Execution
+--
+-- [REF]	Specification of Execution Management
+--		AUTOSAR
+--		Document Identification No 721
+--		Document Status published
+--		Part of AUTOSAR Standard Adaptive Platform
+--		Part of Standard Release R21-11
+--		Date 2021-11-25
+--
+--		pp 63-64	7.6 Deterministic Execution
+--		pp 108-112	8.2.4 Deterministic Client Class
+--
+-- ---------------------------------------------------------------------------------------------- --
+--
+-- TorXakis Model
+--	TYPE Definitions
+--
+-- ---------------------------------------------------------------------------------------------- --
+
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Method calls and returns types
+
+
+{-
+
+	8.2.4 Deterministic Client class
+
+	The DeterministicClient class provides the functionality for an Application
+	to run a cyclic deterministic execution, see 7.6.3. Each Modelled Process which
+	needs support for cyclic deterministic execution has to instantiate this class.
+
+	Kind:		class
+	Symbol:		DeterministicClient
+	Scope:		namespace ara::exec
+	Syntax:		class DeterministicClient final {...};
+	Description:	Class to implement operations on Deterministic Client.
+
+
+	8.2.4.1 DeterministicClient::DeterministicClient
+
+	Kind:		function
+	Symbol:		DeterministicClient()
+	Scope:		class ara::exec::DeterministicClient
+	Syntax:		DeterministicClient () noexcept;
+	Exception:	noexcept
+	Description:	Constructor for DeterministicClient instance,
+			which opens the Execution Management communication channel to access
+			- a wait point for cyclic execution,
+			- a worker pool,
+			- deterministic random numbers,
+			- time stamps.
+
+
+	8.2.4.2 DeterministicClient::~DeterministicClient
+
+	Kind:		function
+	Symbol:		~DeterministicClient()
+	Scope:		class ara::exec::DeterministicClient
+	Syntax:		~DeterministicClient () noexcept;
+	Exception:	noexcept
+	Description:	Destructor of the Deterministic Client instance.
+
+	JT:		what if non-existent object is destructed?
+
+
+	8.2.4.3 DeterministicClient::WaitForActivation
+
+	Kind:		function
+	Symbol:		WaitForActivation()
+	Scope:		class ara::exec::DeterministicClient
+	Syntax:		ara::core::Result<ActivationReturnType> WaitForActivation () noexcept;
+	Return value:	ara::core::Result<ActivationReturn Type>
+			    Process control value (or error);
+			    In the absence of an error, the return value contains the activation state
+			    defined by ara::exec::ActivationReturnType.
+	Exception:	noexcept
+	Errors:		ara::exec::ExecErrc::kCycleOverrun
+			    The deterministic activation cycle time exceeded.
+			ara::exec::ExecErrc::kFailed
+			    Requested operation could not be performed.
+	Description:	Blocks and returns with a process control value
+			when the next activation is triggered by the Runtime.
+
+	JT:		Errors are exceptions? noexcept?
+
+
+	8.2.4.4 DeterministicClient::RunWorkerPool
+
+	Kind:		function
+	Symbol:		RunWorkerPool(WorkerRunnable<ValueType> &runnableObj, Container &container)
+	Scope:		class ara::exec::DeterministicClient
+	Syntax:		template <typename ValueType, typename Container>
+			ara::core::Result<void> RunWorkerPool (WorkerRunnable<ValueType>
+			&runnableObj, Container &container) noexcept;
+	Template param:	ValueType
+			    Element type of container
+			Container
+			    Container for which method WorkerRunnable::Run is invoked for each element
+	Parameters(in):	runnableObj
+			    Object derived from WorkerRunnable that provides a method called Run(...),
+			    which will be called on every container element
+			container
+			    C++ container which supports a standard iterator interface
+			    with - begin() - end() - operator*() operator++
+	Return value:	ara::core::Result<void>
+	Exception:	noexcept
+	Errors:		ara::exec::kFailed
+			    Not in ActivationReturnType::kRun/ActivationReturn Type::kInit cycle state
+	Description:	Run a deterministic worker pool.
+			Uses a pool of Deterministic workers to call a method WorkerRunnable::Run
+			for every element of the container.  The sequential iteration is guaranteed
+			by using the container’s increment operator.
+			The API provides the guarantee that no other iteration scheme is used.
+			This function shall not participate in overload resolution
+			unless ValueType is compatible with Container::value_type.
+
+
+	8.2.4.5 DeterministicClient::GetRandom
+
+	Kind:		function
+	Symbol:		GetRandom()
+	Scope:		class ara::exec::DeterministicClient
+	Syntax:		std::uint64_t GetRandom () noexcept;
+	Return value:	std::uint64_t
+			    uint64_t 64 bit uniform distributed pseudo random number
+	Exception:	noexcept
+	Description:	Return deterministic sequence of random numbers.
+			This returns the next in a sequence of ‘Deterministic’ random numbers.
+			Deterministic’ means, that the returned random numbers are identical
+			within redundant DeterministicClient::WaitForNextActivation() cycles,
+			which are used within redundantly executed Processes.
+
+
+	8.2.4.6 DeterministicClient::SetRandomSeed
+
+	Kind:		function
+	Symbol:		SetRandomSeed(std::uint64_t seed)
+	Scope:		class ara::exec::DeterministicClient
+	Syntax:		void SetRandomSeed (std::uint64_t seed) noexcept;
+	Parameters(in):	seed
+			    Random number seed to DeterministicClient::Set RandomSeed.
+	Return value:	void
+	Exception:	noexcept
+	Description:	Seed random number generator
+			used for redundantly executed deterministic clients.
+
+
+	8.2.4.7 DeterministicClient::GetActivationTime
+
+	Kind:		function
+	Symbol:		GetActivationTime()
+	Scope:		class ara::exec::DeterministicClient
+	Syntax:		ara::core::Result<TimeStamp> GetActivationTime () noexcept;
+	Return value:	ara::core::Result<TimeStamp>
+			    TimeStamp of current activation cycle
+	Exception:	noexcept
+	Errors:		ara::exec::ExecErrc::kNoTimeStamp
+			    Time stamp not available
+	Description:	TimeStamp of activation point.
+			This method provides the timestamp that represents the point in time when
+			the activation was triggered by DeterministicClient::WaitForNextActivation()
+			with return value kRun.
+			Subsequent calls within an activation cycle will always provide the same value.
+			The same value will also be provided within redundantly executed Processes.
+
+
+	8.2.4.8 DeterministicClient::GetNextActivationTime
+
+	Kind:		function
+	Symbol:		GetNextActivationTime()
+	Scope:		class ara::exec::DeterministicClient
+	Syntax:		ara::core::Result<TimeStamp> GetNextActivationTime () noexcept;
+	Return value:	ara::core::Result< TimeStamp >
+			    TimeStamp of next activation cycle
+	Exception:	noexcept
+	Errors:		ara::exec::ExecErrc::kNoTimeStamp
+			    Time stamp not available
+	Description:	Timestamp of next activation point.
+			This method provides the timestamp that represents the point in time
+			when the next activation will be triggered
+			by DeterministicClient::WaitForNextActivation() with return value kRun.
+			Subsequent calls within an activation cycle will always provide the same value.
+			The same value will also be provided within redundantly executed Process.
+
+-}
+
+
+TYPEDEF  Method
+  ::=
+        Create
+      | Delete
+      | Init                  { kCycles        :: Int
+                              ; cycleDuration  :: Time
+                              ; numPoolWorkers :: Int
+                              ; parallel       :: Int
+                              }
+      | SetRandomSeed         { seed           :: Int }
+      | GetRandom
+      | GetActivationTime
+      | GetNextActivationTime
+      | WaitForActivation
+      | RunWorkerPool
+ENDDEF
+
+
+TYPEDEF  Ack
+  ::=
+        OK    { args :: IntList }
+      | ERR   { keys :: IntList }
+      | Error
+ENDDEF
+
+
+TYPEDEF  IntList
+  ::=
+        Emp
+      | Elm { hd :: Int
+            ; tl :: IntList
+            }
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- DeterministicClient type
+--   identification of an object of class 'DeterministicClient' by an Integer reference
+
+
+TYPEDEF  Object
+  ::=
+        Object   { ref :: Int }
+      | NoObject
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- WaitForActivation types
+
+
+{- 
+	8.1.2 ActivationReturnType
+
+	Kind:		enumeration
+	Symbol:		ActivationReturnType
+	Scope:		namespace ara::exec
+	Underlying:	std::uint32_t
+	Syntax:		enum class ActivationReturnType : std::uint32_t {...};
+	Values:		kRegisterServices = 0
+			    application shall register communication services
+			    (this must be the only occasion for performing service registering)
+			kServiceDiscovery = 1
+			    application shall do communication service discovery
+			    (this must be the only occasion for performing service discovery)
+			kInit = 2
+			    application shall initialize its internal data structures (once)
+			kRun = 3
+			    application shall perform its normal operation
+			kTerminate = 4
+			    deterministic execution shall terminate
+	Description:	Defines the return codes for WaitForNextActivation operations.
+			Scoped Enumeration of uint8_t.
+-}
+
+
+TYPEDEF  WaitForActivationResult
+  ::=
+        State  { state :: ActivationReturnType }
+      | Error  { error :: ActivationErrorType }
+ENDDEF
+
+
+TYPEDEF  ActivationReturnType
+  ::=
+        KRegisterServices
+      | KServiceDiscovery
+      | KInit
+      | KRun
+      | KTerminate
+ENDDEF
+
+
+TYPEDEF  ActivationErrorType
+  ::=
+        KCycleOverrun
+      | KFailed
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- TimeStamp type
+
+
+{-
+	8.1.3 DeterministicClient::TimeStamp
+
+	Kind:		type alias
+	Symbol:		TimeStamp
+	Scope:		class ara::exec::DeterministicClient
+	Derived from:	std::chrono::time_point<ara::core::SteadyClock>
+	Syntax:		using TimeStamp = std::chrono::time_point<ara::core::SteadyClock>;
+	Description:	Time stamp of deterministic cycles.
+-}
+
+
+TYPEDEF  Time
+  ::=
+        Time  { time :: Int }
+      | NoTime
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+--                                                                                                --
+-- ---------------------------------------------------------------------------------------------- --
+

@@ -1,0 +1,16 @@
+
+STAUTDEF dc [ DCcall :: DCobj # DCcall; DCreturn :: DCobj # DCreturn ] ()
+  ::=
+    STATE
+        create, created, delete, deleted
+    VAR
+        object :: DCobj
+    INIT
+        create { object := DCobj(0) }
+    TRANS
+        create  ->  DCcall ?obj !DCcall_Construct  ->  created
+        created  ->  DCreturn ?obj !DCreturn_Construct { object := obj }  ->  delete
+        delete  ->  DCcall !object! DCcall_Destruct  ->  deleted
+        deleted  ->  DCreturn ?obj !DCreturn_Destruct  ->  create
+ENDDEF
+

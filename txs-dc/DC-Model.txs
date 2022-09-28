@@ -1,0 +1,67 @@
+
+-- ---------------------------------------------------------------------------------------------- --
+--
+-- AUTOSAR
+-- Execution Management
+-- Deterministic Execution
+--
+-- [REF]        Specification of Execution Management
+--              AUTOSAR
+--              Document Identification No 721
+--              Document Status published
+--              Part of AUTOSAR Standard Adaptive Platform
+--              Part of Standard Release R21-11
+--              Date 2021-11-25
+--
+--              pp 63-64        7.6 Deterministic Execution
+--              pp 108-112      8.2.4 Deterministic Client Class
+--
+-- ---------------------------------------------------------------------------------------------- --
+--
+-- TorXakis Model
+--      MODEL Definitions
+--
+-- ---------------------------------------------------------------------------------------------- --
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Constants
+
+
+CONSTDEF  infty :: Int  ::=  -1
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Channels
+
+
+CHANDEF  DC_Channel
+  ::=
+      Call   :: DCobj # DCcall ;
+      Return :: DCobj # DCreturn
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Model
+
+
+MODELDEF  DC_Model
+  ::=
+      CHAN IN   DCcall
+      CHAN OUT  DCreturn
+
+      BEHAVIOUR
+                dc [ DCcall, DCreturn ] ()
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+--                                                                                                --
+-- ---------------------------------------------------------------------------------------------- --
+

@@ -1,0 +1,152 @@
+
+-- ----------------------------------------------------------------------------------------- --
+-- Model of a Queue of Integers,
+-- with inputs 'In !Enq(x)' and 'In !Deq', and with output 'Out !x'. 
+
+-- ----------------------------------------------------------------------------------------- --
+-- bounded to length n
+
+
+-- ----------------------------------------------------------------------------------------- --
+-- General Data Definitions
+
+-- ----------------------------------------------------------------------------------------- --
+--   IntList :  a list of integers
+--     constructors:
+--       Nil       :  empty list
+--       Cons(h,t) :  list with head h and tail t
+--     generated standard functions:
+--       isNil(l)  :  check if list l matches Nil
+--       isCons(l) :  check if list l matches Cons(h,t)
+--       hd(l)     :  the head of list l, if isCons(l) 
+--       tl(l)     :  the tail of list l, if isCons(l) 
+
+TYPEDEF  IntList  ::=   Nil
+                      | Cons  { hd ::  Int
+                              ; tl ::  IntList
+                              }
+ENDDEF
+
+
+-- ----------------------------------------------------------------------------------------- --
+--   add(x,l)  :  add integer x at the end of integer list l
+--   length(l) :  the length of list l
+
+FUNCDEF  add ( x :: Int; l :: IntList ) :: IntList
+   ::=
+        IF    isNil(l)
+        THEN  Cons(x,Nil)
+        ELSE  Cons(hd(l),add(x,tl(l)))
+        FI
+ENDDEF
+
+FUNCDEF  length ( l :: IntList ) :: Int
+   ::=
+        IF    isNil(l)
+        THEN  0
+        ELSE  1 + length(tl(l))
+        FI
+ENDDEF
+
+
+-- ----------------------------------------------------------------------------------------- --
+-- QueueOp :  operations on a queue
+--     constructors:
+--       Enq(val) :  Enqueue integer val
+--       Deq      :  request to Dequeue the next value
+--     generated standard functions:
+--       isEnq(qop) :  check if queue operator qop matches Enq(v)
+--       isDeq(qop) :  check if queue operator qop matches Deq
+--       val(qop)   :  the value of queue operator qop, if isEnq(qop)
+
+TYPEDEF  QueueOp   ::=   Put { val :: Int }
+                       | Get
+                       | New {maxl :: Int }
+ENDDEF
+
+
+-- ----------------------------------------------------------------------------------------- --
+-- channel definitions
+--   In  :  channel with messages of type QueueOp
+--   Out :  channel with messages of type Int
+
+CHANDEF  Channels  ::=    In   :: QueueOp
+                        ; Out  :: Int
+ENDDEF
+
+
+-- ----------------------------------------------------------------------------------------- --
+-- process definition, recursive, for a queue  (== labelled transition system)
+--   communicating on channel In  with messages of type QueueOp
+--   communicating on channel Out with messages of type Int
+--   with parameter buf of type integer list
+--   ## : representing choice
+--   >-> : representing sequencing
+
+PROCDEF  queue  [ In :: QueueOp; Out :: Int ]  ( buf :: IntList; maxl :: Int )
+   ::=
+                 In ?qop [[ isPut(qop) /\ (length(buf) < maxl) ]]
+            >->  queue [In,Out] (add(val(qop),buf), maxl)
+        ##
+                 In ?qop [[ isGet(qop) /\ not(isNil(buf)) ]]
+            >->  Out !hd(buf)
+            >->  queue [In,Out] (tl(buf), maxl)
+ENDDEF
+
+
+-- ----------------------------------------------------------------------------------------- --
+-- model definition for the Queue system
+--   declaring channel In  as input channel  (Queue system point of view)
+--   declaring channel Out as output channel (Queue system point of view)
+--   initializing the model as process queue with buf initialized to Nil (empty list)
+
+MODELDEF  Queue
+   ::=
+        CHAN IN    In
+        CHAN OUT   Out
+
+        BEHAVIOUR
+                   In ?qop [[ IF isNew(qop) THEN maxl(qop)>7 ELSE False FI ]]
+               >-> queue [ In, Out ] ( Nil, maxl(qop) )
+ENDDEF
+
+
+-- ----------------------------------------------------------------------------------------- --
+-- definition of the tester connection to the sut
+--   the tester is acting as client on a socket
+--   channel In is declared as output (tester point of view), mapped to socket (localhost,7890),
+--     a message of type QueueOp on channel In is encoded as string with standard function toString
+--   channel Out is declared as input (tester point of view), mapped to socket (localhost,7890),
+--     a received string on socket (localhost,7890), which must represent an integer,
+--     is decoded with standard function fromString and forwarded to channel Out
+
+CNECTDEF  Sut
+   ::=
+        CLIENTSOCK
+
+        CHAN  OUT  In                         HOST "192.168.2.45"  PORT 1234
+        ENCODE     In ? qop               ->  ! encode(qop)
+
+        CHAN  IN   Out                        HOST "192.168.2.45"  PORT 1234
+        DECODE     Out ! fromString(s)   <-   ? s
+ENDDEF
+
+
+-- ----------------------------------------------------------------------------------------- --
+
+FUNCDEF  encode ( qop :: QueueOp ) :: String
+  ::=
+      IF   isPut(qop) 
+      THEN "torxaki_if:call(put,[x," ++ toString(val(qop)) ++ "])."
+      ELSE IF   isGet(qop)
+           THEN "torxaki_if:call(get,[x])."
+           ELSE "torxaki_if:call(new,[" ++ toString(maxl(qop)) ++ "])."
+           FI
+      FI
+ENDDEF
+
+
+-- ----------------------------------------------------------------------------------------- --
+--                                                                                           --
+-- ----------------------------------------------------------------------------------------- --
+

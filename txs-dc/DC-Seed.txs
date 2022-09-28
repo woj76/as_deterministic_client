@@ -1,0 +1,155 @@
+
+-- ---------------------------------------------------------------------------------------------- --
+--
+-- AUTOSAR
+-- Execution Management
+-- Deterministic Execution
+--
+-- [REF]	Specification of Execution Management
+--		AUTOSAR
+--		Document Identification No 721
+--		Document Status published
+--		Part of AUTOSAR Standard Adaptive Platform
+--		Part of Standard Release R21-11
+--		Date 2021-11-25
+--
+--		pp 63-64	7.6 Deterministic Execution
+--		pp 108-112	8.2.4 Deterministic Client Class
+--
+-- ---------------------------------------------------------------------------------------------- --
+--
+-- TorXakis Model
+--	Seed Handling
+--
+-- ---------------------------------------------------------------------------------------------- --
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Types
+
+
+TYPEDEF  SeedList
+  ::=
+        Emp
+      | Elm { hd :: Seed
+            ; tl :: SeedList
+            }
+ENDDEF
+
+
+TYPEDEF  ClientRandIndex
+  ::=
+      ClientRandIndex { obj   :: Object
+                      ; index :: Int
+                      }
+
+
+TYPEDEF  ClientList
+  ::=
+        Emp
+      | Elm { hd :: ClientRandIndex
+            ; tl :: ClientList
+            }
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Dealing with seeds
+
+
+PROCDEF  seeds  [ Call   :: Object # Method
+                ; Return :: Object # Ack
+                ; RemDC  :: Object
+                ; AddDC  :: Seed # Object
+                ]
+                ( seeds  :: SeedList )
+  ::=
+           -- new seed
+              Call ?obj ?m [[ IF isSetRandomSeed(m) THEN not(isin(seed(m),seeds)) ELSE False ]]
+          >->
+              RemDC !obj
+          >->
+              (
+                    seed [ Call, Return, Seed ] ( seed(m), Emp, Elm(obj,Emp) )
+                |||
+                    seeds [ Call, Return, Seed ] ( Elm(seed(m),seeds) )
+              )
+      ##
+           -- seed already set
+              Call ?obj ?m [[ IF isSetRandomSeed(m) THEN isin(seed(m),seeds) ELSE False ]]
+          >->
+              RemDC !obj
+          >->
+              AddDC !seed(m) !obj
+          >->
+              seeds [ Call, Return, Seed ] ( seeds )
+      ##
+           -- any other call
+              Call ?obj ?m [[ not(isSetRandomSeed(m)) ]]
+          >->
+              seeds [ Call, Return, Seed ] ( seeds )
+ENDDEF
+
+
+-- remove obj from previous seed?
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Dealing with one seed
+
+
+PROCDEF  seed  [ Call    :: Object # Method
+               ; Return  :: Object # Ack
+               ; RemDC   :: Object
+               ; AddDC   :: Seed # Object
+               ]
+               ( myseed  :: Int
+               ; randoms :: IntList
+               ; clients :: ClientList
+               ; pendobj  :: Object
+               )
+  ::=
+           -- remove client with new seed
+           --
+              RemDC ?obj
+          >->
+              seed [ Call, Return, RemDC, AddDC ]
+                   ( myseed, randoms, remove(obj,clients) )
+      ##
+           -- add client with this seed as new seed
+           --
+              AddDC !myseed ?obj
+          >->
+              seed [ Call, Return, RemDC, AddDC ]
+                   ( myseed, randoms, add(obj,clients) )
+      ##
+           -- get random
+           --
+              Call ?obj !GetRandom
+          >->
+              seed [ Call, Return, RemDC, AddDC ]
+                   ( myseed, randoms, clients, obj )
+      ##
+           -- produce pending random
+           --
+              Return !pendobj ?return
+
+ 
+get random with existing random
+
+let rand :: Int = random(index(penobjrand,clients),randoms)
+in if rand == 0 then 
+
+randoms
+
+
+
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+--                                                                                                --
+-- ---------------------------------------------------------------------------------------------- --
+

@@ -1,0 +1,133 @@
+
+-- ---------------------------------------------------------------------------------------------- --
+--
+-- AUTOSAR
+-- Execution Management
+-- Deterministic Execution
+--
+-- [REF]        Specification of Execution Management
+--              AUTOSAR
+--              Document Identification No 721
+--              Document Status published
+--              Part of AUTOSAR Standard Adaptive Platform
+--              Part of Standard Release R21-11
+--              Date 2021-11-25
+--
+--              pp 63-64        7.6 Deterministic Execution
+--              pp 108-112      8.2.4 Deterministic Client Class
+--
+-- ---------------------------------------------------------------------------------------------- --
+--
+-- TorXakis Model
+--      SUT Connections and En/Decoding
+--
+-- ---------------------------------------------------------------------------------------------- --
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- SUT Proxy
+
+
+CNECTDEF  DC_Sut
+  ::=
+      CLIENTSOCK
+
+      CHAN  OUT   DCcall                                           HOST "localhost"  PORT 7897
+      ENCODE      DCcall ?obj ?call                            ->  !encode(obj,call)
+
+      CHAN  IN    DCreturn                                         HOST "localhost"  PORT 7897
+      DECODE      DCreturn !obj(decode(s)) !return(decode(s))  <-  ?s
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Encoding
+
+
+FUNCDEF  encode ( obj :: DCobj; call :: DCcall ) :: String
+  ::=
+           IF isDCcall_Construct(call)
+              THEN "create"
+      ELSE IF isDCcall_Destruct(call)
+              THEN "delete " ++ toString(ref(obj))
+      ELSE ""
+           FI FI
+
+{-         IF isDCcall_WaitForActivation
+              THEN
+      ELSE IF isDCcall_RunWorkerPool
+              THEN
+      ELSE IF isDCcall_GetRandom
+              THEN
+      ELSE IF isDCcall_SetRandomSeed
+              THEN
+      ELSE IF isDCcall_GetActivationTime
+              THEN
+      ELSE IF isDCcall_GetNextActivationTime
+              THEN
+           FI FI FI FI FI FI FI FI
+-}
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+-- Decoding
+
+
+TYPEDEF  ObjReturnPair
+  ::=
+      Pair { obj    :: DCobj
+           ; return :: DCreturn
+           }
+ENDDEF
+
+
+TYPEDEF  StringList
+  ::=
+        Nil
+      | Cons { hd :: String
+             ; tl :: StringList
+             }
+ENDDEF
+
+
+-- ---------------------------------------------------------------------------------------------- --
+
+
+FUNCDEF  decode ( s :: String ) :: ObjReturnPair
+  ::=
+    LET  resp = parse(s)
+     IN
+         IF   isCons(resp)
+         THEN IF   isCons(tl(resp))
+              THEN Pair(DCobj(fromString(hd(tl(resp)))),DCreturn_Construct)
+              ELSE Pair(DCobj(0),DCreturn_Destruct)
+              FI
+         ELSE Pair(DCobj(0),DCreturn_Error("Cannot Decode Return Message"))
+         FI
+     NI 
+ENDDEF
+
+
+FUNCDEF  parse ( s :: String ) :: StringList
+  ::=
+      LET  s0   :: String  =  dropWhile(" ",s)
+        ;  s1   :: String  =  takeWhileNot(" \n",s0)
+        ;  rest :: String  =  dropWhileNot(" \n",s0)
+       IN
+           IF   s1 <> ""
+           THEN Cons(s1,parse(rest))
+           ELSE Nil
+           FI
+       NI
+ENDDEF
+
+
+
+-- ---------------------------------------------------------------------------------------------- --
+--                                                                                                --
+-- ---------------------------------------------------------------------------------------------- --
+
