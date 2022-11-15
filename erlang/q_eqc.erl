@@ -24,7 +24,6 @@ new_args(_S) -> [ positive() ].
 new_next(_S, Ptr, [Size]) ->
   #state{ptr=Ptr, size=Size, elements=[]}.
 
-
 put(Ptr, Val) ->
   q:put(Ptr, Val).
 
@@ -41,7 +40,6 @@ put_features(S, _Args, _Res) ->
   [ {wrap, S#state.puts == S#state.size} ].
 
 
-
 get(Ptr) ->
   q:get(Ptr).
 
@@ -56,7 +54,7 @@ get_next(S,_V,[_]) ->
 get_post(S, Args, R) ->
   lists:member(R, get_as(S, Args)).
 
-get_as(S, Args) ->
+get_as(S, _Args) ->
     [ R || R <- S#state.elements,
            R == hd(S#state.elements)].
 
@@ -73,6 +71,8 @@ size_args(S) ->
 size_post(S, [_], Res) ->
   eq(Res,length(S#state.elements)).
 
+size_res(S, [_]) ->
+    length(S#state.elements).
 
 prop_q() ->
   eqc:dont_print_counterexample(
@@ -82,13 +82,8 @@ prop_q() ->
               statistics({H, S, Res}, Cmds, Res==ok)
 	    end)).
 
-
 start() ->
   eqc_c:start(q).
-
-
-
-
 
 %% -- additional callbacks to have fun ----
 %% -- or, better, to improve the model ----
@@ -97,17 +92,13 @@ new_shape([N]) -> [N].
 
 put_shape([_,_]) -> ['_', '_'].
 
-
-
-
-
-
-
-
+% command_precondition_common(S, Cmd) ->
+%  (Cmd == new andalso S#state.ptr == undefined)
+%    orelse (Cmd /= new andalso S#state.ptr /= undefined).
 
 command_precondition_common(S, Cmd) ->
-  (Cmd == new andalso S#state.ptr == undefined)
-    orelse (Cmd /= new andalso S#state.ptr /= undefined).
+  % io:format("PTR: ~p~n",[S#state.ptr]),
+  (Cmd == new orelse S#state.ptr /= undefined).
 
 statistics({H, S, Res}, Cmds, Prop) ->
   aggregate(command_names(Cmds),
@@ -117,7 +108,6 @@ statistics({H, S, Res}, Cmds, Prop) ->
 
 suite() ->
   eqc_suite:feature_based(q_eqc:prop_q()).
-
 
 bugs() ->
   eqc_statem:print_bugs(more_bugs(eqc:testing_time(10, prop_q()), 20, [])).

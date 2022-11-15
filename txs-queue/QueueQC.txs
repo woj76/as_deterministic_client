@@ -1,7 +1,7 @@
 
 -- ----------------------------------------------------------------------------------------- --
 -- Model of a Queue of Integers,
--- with inputs 'In !Enq(x)' and 'In !Deq', and with output 'Out !x'. 
+-- with inputs 'In !Enq(x)' and 'In !Deq', and with output 'Out !x'.
 
 -- ----------------------------------------------------------------------------------------- --
 -- bounded to length n
@@ -18,8 +18,8 @@
 --     generated standard functions:
 --       isNil(l)  :  check if list l matches Nil
 --       isCons(l) :  check if list l matches Cons(h,t)
---       hd(l)     :  the head of list l, if isCons(l) 
---       tl(l)     :  the tail of list l, if isCons(l) 
+--       hd(l)     :  the head of list l, if isCons(l)
+--       tl(l)     :  the tail of list l, if isCons(l)
 
 TYPEDEF  IntList  ::=   Nil
                       | Cons  { hd ::  Int
@@ -124,10 +124,10 @@ CNECTDEF  Sut
    ::=
         CLIENTSOCK
 
-        CHAN  OUT  In                         HOST "192.168.2.45"  PORT 1234
+        CHAN  OUT  In                         HOST "localhost"  PORT 1234
         ENCODE     In ? qop               ->  ! encode(qop)
 
-        CHAN  IN   Out                        HOST "192.168.2.45"  PORT 1234
+        CHAN  IN   Out                        HOST "localhost"  PORT 1234
         DECODE     Out ! fromString(s)   <-   ? s
 ENDDEF
 
@@ -136,7 +136,7 @@ ENDDEF
 
 FUNCDEF  encode ( qop :: QueueOp ) :: String
   ::=
-      IF   isPut(qop) 
+      IF   isPut(qop)
       THEN "torxaki_if:call(put,[x," ++ toString(val(qop)) ++ "])."
       ELSE IF   isGet(qop)
            THEN "torxaki_if:call(get,[x])."
@@ -149,4 +149,3 @@ ENDDEF
 -- ----------------------------------------------------------------------------------------- --
 --                                                                                           --
 -- ----------------------------------------------------------------------------------------- --
-

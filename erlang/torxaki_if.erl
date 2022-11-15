@@ -56,7 +56,7 @@ handle_call({call, Fun, Args} , _From, #{eqc_state := S,
             Reply =
                 try result(M, Fun, [S, Args])
                 catch _:_ ->
-                        {ok, void}
+                        {ok, list_to_atom(lists:flatten(io_lib:format("symvar_~p",[Counter+1])))}
                 end,
             {reply, Reply, State#{eqc_state => NextS, counter => Counter+1}}
     end.

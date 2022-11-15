@@ -14,15 +14,21 @@
 %13> erl_eval:exprs(Term,  erl_eval:new_bindings()).
 %{value,ok,[]}
 
+% c(q_eqc), c(torxaki_if), c(socket_server).
+
 -module(socket_server).
 -compile(export_all).
 -define(PORTNUM, 1234).
 
 answer_request(Request) ->
-	{ResScan, Tokens, _ } = erl_scan:string(Request),
-	{Res, Term} = erl_parse:parse_exprs(Tokens),
+	{_, Tokens, _ } = erl_scan:string(Request),
+	{_, Term} = erl_parse:parse_exprs(Tokens),
 	{value, Value, _} = erl_eval:exprs(Term,  erl_eval:new_bindings()),
-        Value.
+	Value.
+
+% {value, V, ...}
+% {value, {ok, void}, ...}
+% {value, {error, precondition_failed}, ...}
 
 start() ->
        torxaki_if:start_link(q_eqc),
@@ -63,9 +69,9 @@ handle_requests(Socket) ->
 			             Res = answer_request(I),
 				     io:format("RES: ~p~n", [Res]),
 				     case Res of
-					     {ok,void} -> ok;
-				             {ok, V} ->
-					     gen_tcp:send(Socket, io_lib:format("~p~n", [V]))
+					     {ok,_SV} -> ok; % gen_tcp:send(Socket, io_lib:format("~p~n", [SV]));
+				             _ ->
+					     gen_tcp:send(Socket, io_lib:format("~p~n", [Res]))
 				     end
 		             end, string:split(Packet,"\n",all)),
                      handle_requests(Socket)
